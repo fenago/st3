@@ -3,6 +3,8 @@ from llama_index import VectorStoreIndex, ServiceContext, Document
 from llama_index.llms import OpenAI
 import openai
 from llama_index import SimpleDirectoryReader
+import tempfile
+import os
 
 # Set page configuration
 st.set_page_config(page_title="Chat with your syllabus!", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
@@ -24,36 +26,39 @@ def load_data(input_dir):
 uploaded_file = st.sidebar.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
-    # Save the uploaded file to a temporary location
-    with open("uploaded_file_path.txt", "wb") as f:
-        f.write(uploaded_file.getvalue())
-    
-    # Call the load_data() function with the path of the uploaded file
-    input_dir = "uploaded_file_path.txt"
-    index = load_data(input_dir)
+    # Create a temporary directory to save the uploaded file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = os.path.join(temp_dir, "uploaded_file.txt")
+        
+        # Save the uploaded file to the temporary location
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
 
-    if "messages" not in st.session_state.keys(): # Initialize the chat messages history
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Ask me a question about the course!"}
-        ]
+        # Call the load_data() function with the path of the uploaded file
+        index = load_data(temp_dir)
 
-    chat_engine = index.as_chat_engine(chat_mode="condense_question", verbose=True)
+        if "messages" not in st.session_state.keys(): # Initialize the chat messages history
+            st.session_state.messages = [
+                {"role": "assistant", "content": "Ask me a question about the course!"}
+            ]
 
-    if prompt := st.chat_input("Your question"): # Prompt for user input and save to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        chat_engine = index.as_chat_engine(chat_mode="condense_question", verbose=True)
 
-    for message in st.session_state.messages: # Display the prior chat messages
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+        if prompt := st.chat_input("Your question"): # Prompt for user input and save to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # If last message is not from assistant, generate a new response
-    if st.session_state.messages[-1]["role"] != "assistant":
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = chat_engine.chat(prompt)
-                st.write(response.response)
-                message = {"role": "assistant", "content": response.response}
-                st.session_state.messages.append(message) # Add response to message history
+        for message in st.session_state.messages: # Display the prior chat messages
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
+
+        # If last message is not from assistant, generate a new response
+        if st.session_state.messages[-1]["role"] != "assistant":
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    response = chat_engine.chat(prompt)
+                    st.write(response.response)
+                    message = {"role": "assistant", "content": response.response}
+                    st.session_state.messages.append(message) # Add response to message history
 
 else:
     st.sidebar.write("Please upload a document to proceed.")
