@@ -23,15 +23,18 @@ if uploaded_file:
 else:
     input_dir = "./data"
 
+st.write(f'File saved at: {file_path}')  # Debugging line
+
 @st.cache_resource(show_spinner=False)
 def load_data(input_dir):
     with st.spinner(text="Loading and indexing the course docs – hang tight! This should take 1-2 minutes."):
         reader = SimpleDirectoryReader(input_dir=input_dir, recursive=True)
         docs = reader.load_data()
+        st.write(f'Loaded docs: {docs}')  # Debugging line
         service_context = ServiceContext.from_defaults(llm=OpenAI(model="gpt-3.5-turbo", temperature=0.5, system_prompt="You are a College Professor or Corporate Trainer and your job is to answer questions about the course. Assume that all questions are related to the course and documents provided. Keep your answers technical and based on facts – do not hallucinate features."))
         index = VectorStoreIndex.from_documents(docs, service_context=service_context)
         return index
-st.write(os.path.abspath(input_dir))
+
 index = load_data(input_dir)
 chat_engine = index.as_chat_engine(chat_mode="condense_question", verbose=True)
 
