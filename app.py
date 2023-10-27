@@ -14,13 +14,12 @@ st.info("Check out the Data Analytics Program at Miami Dade College [MDC](https:
 uploaded_file = st.sidebar.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        file_dir = os.path.join(temp_dir, "uploaded_files")
-        os.makedirs(file_dir, exist_ok=True)
-        file_path = os.path.join(file_dir, "uploaded_file.txt")
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getvalue())
-        input_dir = file_dir
+    file_dir = 'data'
+    os.makedirs(file_dir, exist_ok=True)  # Ensure the directory exists
+    file_path = os.path.join(file_dir, "uploaded_file.txt")
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getvalue())
+    input_dir = file_dir
 else:
     input_dir = "./data"
 
