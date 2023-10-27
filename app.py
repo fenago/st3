@@ -15,10 +15,12 @@ uploaded_file = st.sidebar.file_uploader("Upload a document", type=["pdf", "docx
 
 if uploaded_file:
     with tempfile.TemporaryDirectory() as temp_dir:
-        file_path = os.path.join(temp_dir, "uploaded_file.txt")
+        file_dir = os.path.join(temp_dir, "uploaded_files")
+        os.makedirs(file_dir, exist_ok=True)
+        file_path = os.path.join(file_dir, "uploaded_file.txt")
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getvalue())
-        input_dir = temp_dir
+        input_dir = file_dir
 else:
     input_dir = "./data"
 
