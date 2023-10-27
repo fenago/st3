@@ -3,16 +3,25 @@ from llama_index import VectorStoreIndex, ServiceContext, Document
 from llama_index.llms import OpenAI
 import openai
 from llama_index import SimpleDirectoryReader
-import tempfile
 import os
+import tempfile
 
-# Set page configuration
 st.set_page_config(page_title="Chat with your syllabus!", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
 openai.api_key = st.secrets.openai_key
 st.title("Chat with the Syllabus and Course Outline 💬🦙")
 st.info("Check out the Data Analytics Program at Miami Dade College [MDC](https://mdc.edu)", icon="📃")
 
-# Function to load data from the specified input directory
+uploaded_file = st.sidebar.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
+
+if uploaded_file:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = os.path.join(temp_dir, "uploaded_file.txt")
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+        input_dir = temp_dir
+else:
+    input_dir = "./data"
+
 @st.cache_resource(show_spinner=False)
 def load_data(input_dir):
     with st.spinner(text="Loading and indexing the course docs – hang tight! This should take 1-2 minutes."):
@@ -22,43 +31,23 @@ def load_data(input_dir):
         index = VectorStoreIndex.from_documents(docs, service_context=service_context)
         return index
 
-# Sidebar file uploader
-uploaded_file = st.sidebar.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
+index = load_data(input_dir)
+chat_engine = index.as_chat_engine(chat_mode="condense_question", verbose=True)
 
-if uploaded_file:
-    # Create a temporary directory to save the uploaded file
-    with tempfile.TemporaryDirectory() as temp_dir:
-        file_path = os.path.join(temp_dir, "uploaded_file.txt")
-        
-        # Save the uploaded file to the temporary location
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getvalue())
+if "messages" not in st.session_state.keys():
+    st.session_state.messages = [{"role": "assistant", "content": "Ask me a question about the course!"}]
 
-        # Call the load_data() function with the path of the uploaded file
-        index = load_data(temp_dir)
+if prompt := st.chat_input("Your question"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-        if "messages" not in st.session_state.keys(): # Initialize the chat messages history
-            st.session_state.messages = [
-                {"role": "assistant", "content": "Ask me a question about the course!"}
-            ]
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-        chat_engine = index.as_chat_engine(chat_mode="condense_question", verbose=True)
-
-        if prompt := st.chat_input("Your question"): # Prompt for user input and save to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-
-        for message in st.session_state.messages: # Display the prior chat messages
-            with st.chat_message(message["role"]):
-                st.write(message["content"])
-
-        # If last message is not from assistant, generate a new response
-        if st.session_state.messages[-1]["role"] != "assistant":
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    response = chat_engine.chat(prompt)
-                    st.write(response.response)
-                    message = {"role": "assistant", "content": response.response}
-                    st.session_state.messages.append(message) # Add response to message history
-
-else:
-    st.sidebar.write("Please upload a document to proceed.")
+if st.session_state.messages[-1]["role"] != "assistant":
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            response = chat_engine.chat(prompt)
+            st.write(response.response)
+            message = {"role": "assistant", "content": response.response}
+            st.session_state.messages.append(message)
