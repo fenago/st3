@@ -1,0 +1,5 @@
+Chat with the Syllabus App
+
+This interactive application allows users to upload a course syllabus or document and then engage in a chat interface to ask and receive answers about the content of the uploaded document. Whether it's clarifications about course objectives, module details, or any other aspect, the app provides insightful responses, making course navigation and understanding seamless for students or interested parties.
+
+Authored by Dr. Ernesto Lee, Faculty Member at Miami Dade College and Chief Innovation Officer at Trivera Technologies.
