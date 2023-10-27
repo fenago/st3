@@ -20,8 +20,10 @@ if uploaded_file:
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getvalue())
     input_dir = file_dir
+    st.write(f'File saved at: {file_path}')  # Debugging line
 else:
     input_dir = "./data"
+
 
 st.write(f'File saved at: {file_path}')  # Debugging line
 
